@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::{io::Read};
 use std::fs::OpenOptions;
-
+use notify_rust::{Notification, Hint};
 
 const BASE_PATH: &'static str =  "/var/lib/bootsecure/";
 const BASE_CONFIG: &'static str =  "/var/lib/bootsecure/save_mtc";
@@ -61,7 +61,7 @@ fn write_value_to_config(data: String)-> std::io::Result<()>{
 fn read_value_from_mtc_val(value :&mut u16)->std::io::Result<()>{
     let exists = match fs::exists(BASE_CONFIG) {
         Ok(val) => val,
-        Err(val) => false // if something went wrong the file might as well not exist
+        Err(_) => false // if something went wrong the file might as well not exist
     };
     if exists{
         let content_mtc = match fs::read_to_string(BASE_CONFIG){
@@ -81,16 +81,30 @@ fn read_value_from_mtc_val(value :&mut u16)->std::io::Result<()>{
 fn main() {
     let mut old_mtc : u16 = 0;
     let mut current_mtc : u16 = 0;
-    //TODO better error handling here
     let _ = read_value_from_mtc_val(&mut old_mtc);
     let _ = read_MTC(&mut current_mtc);
     let _ =write_value_to_config(current_mtc.to_string());
+
     // user ouput needs to be replaced with logging to journalctl and notification
-    if(old_mtc > current_mtc){
-        print!("saved MTC: {old_mtc}\ncurrent MTC: {current_mtc}\n You likely moved plattfer between PCs Otherwiese attack has happend!")
+    let notification_boody = format!("likely Harddrive transplantation due to missmatch of MTC values - (current MTC): {} (Saved MTC) {} ", &current_mtc.to_string() , &old_mtc.to_string());
+    if old_mtc > current_mtc {
+        let _ = Notification::new()
+            .summary("bootsecure bootwarning")
+            .body(&notification_boody)
+            .appname("bootsecure")
+            .hint(Hint::Resident(true))
+            .timeout(0)
+            .show();
     }
     let diff_mtc = current_mtc - old_mtc;
-    if (diff_mtc > 1){
-        print!("{diff_mtc} Boots have happend since your last login!!")
+    if diff_mtc > 1{
+        let notification_boody = diff_mtc.to_string() +" times has your PC has been booted since your last login!";
+        let _ = Notification::new()
+            .summary("bootsecure bootwarning")
+            .body(&notification_boody)
+            .appname("bootsecure")
+            .hint(Hint::Resident(true))
+            .timeout(0)
+            .show();
     }
 }
