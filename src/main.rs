@@ -39,7 +39,7 @@ fn read_MTC(value :&mut u16) -> std::io::Result<()>{
             }
         }
     }
-    *value = u16::try_from(0).unwrap();
+    *value = 0;
     Ok(())
 }
 //storing and and restoring the value to a config file
@@ -69,7 +69,7 @@ fn read_value_from_mtc_val(value :&mut u16, path_mtc: &PathBuf)->std::io::Result
             Err(err) => {print!("The following Error occured while casting: {err}"); 0}
         }
     }else {
-        *value = u16::try_from(0).unwrap()
+        *value = 0;
     }
     Ok(())
 }
